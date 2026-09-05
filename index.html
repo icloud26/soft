@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM 시뮬레이션 학습 허브</title>
+<style>
+:root{
+  --bg:#f5f7fb;--card:#fff;--ink:#182033;--muted:#687086;--line:#dfe5ee;
+  --accent:#3457d5;--soft:#eef2ff;--green:#1f7a55;--orange:#a56000;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Pretendard","Noto Sans KR",sans-serif;
+  line-height:1.6
+}
+.wrap{max-width:1120px;margin:0 auto;padding:28px 18px 60px}
+.hero{
+  background:linear-gradient(135deg,#fff,#eef2ff);
+  border:1px solid var(--line);border-radius:22px;padding:28px;
+  box-shadow:0 8px 28px rgba(30,45,90,.06)
+}
+.eyebrow{color:var(--accent);font-weight:800;font-size:.9rem}
+h1{margin:.2rem 0 .5rem;font-size:clamp(2rem,4vw,3rem);line-height:1.2}
+h2{margin:0 0 10px;font-size:1.35rem}
+h3{margin:0 0 6px;font-size:1.08rem}
+.lead{margin:0;color:var(--muted);max-width:850px}
+.flow{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px
+}
+.flow .step{
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px
+}
+.num{
+  display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;
+  background:var(--soft);color:var(--accent);font-weight:900;margin-bottom:8px
+}
+.cards{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px
+}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:20px;box-shadow:0 6px 22px rgba(28,44,92,.04)
+}
+.tag{
+  display:inline-block;padding:4px 9px;border-radius:999px;background:var(--soft);
+  color:var(--accent);font-weight:800;font-size:.82rem;margin-bottom:8px
+}
+.card p{color:var(--muted)}
+.points{margin:12px 0 0;padding-left:1.15rem}
+.points li{margin:.35rem 0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+button{
+  border:none;border-radius:10px;padding:10px 13px;font-weight:800;cursor:pointer;
+  background:var(--accent);color:white
+}
+button.secondary{background:#edf0f6;color:#293246}
+.viewer{
+  margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:18px;
+  overflow:hidden;box-shadow:0 6px 22px rgba(28,44,92,.04)
+}
+.viewerHead{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px 16px;border-bottom:1px solid var(--line);background:#fafbfe
+}
+.viewerTitle{font-weight:900}
+iframe{width:100%;height:760px;border:0;background:white}
+.note{
+  margin-top:18px;padding:14px 16px;background:#fff;border:1px solid var(--line);
+  border-radius:14px;color:var(--muted)
+}
+.compare{
+  margin-top:20px;background:white;border:1px solid var(--line);border-radius:18px;padding:20px
+}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f8fafc}
+.footer{text-align:center;color:var(--muted);font-size:.86rem;margin-top:22px}
+@media(max-width:850px){
+  .cards,.flow{grid-template-columns:1fr}
+  iframe{height:680px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">인공지능 기초 · LLM 시뮬레이션 학습 허브</div>
+    <h1>LLM을 3단계로 이해해 보기</h1>
+    <p class="lead">
+      생성형 인공지능의 작동 원리를 한 번에 모두 보기보다
+      <b>다음 토큰 생성 → 문맥과 Attention → 환각과 사실 검증</b>의 흐름으로 나누어 살펴봅니다.
+    </p>
+  </section>
+
+  <section class="flow">
+    <div class="step"><span class="num">1</span><h3>어떻게 문장을 만들까?</h3><p>다음 토큰의 확률과 Temperature를 관찰합니다.</p></div>
+    <div class="step"><span class="num">2</span><h3>문맥의 어디를 볼까?</h3><p>토큰별 Attention 중요도와 분포 변화를 확인합니다.</p></div>
+    <div class="step"><span class="num">3</span><h3>자연스러우면 사실일까?</h3><p>근거의 양과 답변 정책에 따른 환각 가능성을 비교합니다.</p></div>
+  </section>
+
+  <section class="cards">
+    <article class="card">
+      <span class="tag">1. 다음 토큰 예측</span>
+      <h2>LLM은 다음 토큰을 어떻게 고를까?</h2>
+      <p>입력 문장과 Temperature를 바꾸면서 후보 토큰의 확률과 생성 결과를 비교합니다.</p>
+      <ul class="points">
+        <li>확률이 높은 토큰이 더 자주 선택됨</li>
+        <li>Temperature가 높아질수록 결과가 다양해짐</li>
+        <li>같은 조건 10회 결과 비교 가능</li>
+      </ul>
+      <div class="btnrow">
+        <button onclick="openSim('next')">이 시뮬레이터 보기</button>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="tag">2. Attention</span>
+      <h2>LLM은 문장에서 어디를 보고 있을까?</h2>
+      <p>분석할 토큰과 Attention 집중도를 바꾸면서 문맥 속 중요도가 어떻게 달라지는지 확인합니다.</p>
+      <ul class="points">
+        <li>토큰마다 중요도가 다르게 나타남</li>
+        <li>분석할 토큰에 따라 중요 문맥이 달라짐</li>
+        <li>다음 토큰 후보 확률과 연결해 관찰</li>
+      </ul>
+      <div class="btnrow">
+        <button onclick="openSim('attn')">이 시뮬레이터 보기</button>
+      </div>
+    </article>
+
+    <article class="card">
+      <span class="tag">3. 환각과 사실 검증</span>
+      <h2>자연스러운 문장은 항상 사실일까?</h2>
+      <p>제공 문맥의 정보량과 답변 정책을 바꾸면서 근거 있는 답변과 오류 가능성을 비교합니다.</p>
+      <ul class="points">
+        <li>문맥 없음·일부·충분함 비교</li>
+        <li>항상 답하기 vs 근거 없으면 보류</li>
+        <li>같은 조건 10회 결과 비교 가능</li>
+      </ul>
+      <div class="btnrow">
+        <button onclick="openSim('hall')">이 시뮬레이터 보기</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="compare">
+    <h2>세 시뮬레이션 한눈에 비교</h2>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>핵심 질문</th><th>주요 조작값</th><th>관찰 결과</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>다음 토큰 예측</td><td>LLM은 문장을 어떻게 이어 갈까?</td><td>Temperature, 입력 문장, 생성 길이</td><td>후보 확률, 실제 선택, 생성 다양성</td></tr>
+        <tr><td>Attention</td><td>LLM은 문맥의 어디를 중요하게 볼까?</td><td>입력 문장, 분석 토큰, 집중도</td><td>토큰 중요도, 다음 토큰 확률 변화</td></tr>
+        <tr><td>환각·사실 검증</td><td>자연스러운 답변은 항상 사실일까?</td><td>문맥 정보량, 답변 정책</td><td>근거 있음, 근거 부족, 근거와 충돌</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="viewer" id="viewer">
+    <div class="viewerHead">
+      <div class="viewerTitle" id="viewerTitle">1. 다음 토큰 예측 시뮬레이터</div>
+      <button class="secondary" onclick="closeViewer()">닫기</button>
+    </div>
+    <iframe id="frame" src="llm_next_token_simulator_v2.html"></iframe>
+  </section>
+
+  <div class="note">
+    세 시뮬레이터는 실제 LLM 전체를 재현하는 것이 아니라, 수업에서 핵심 원리를 관찰하기 위해 단순화한 모델입니다.
+    GitHub Pages 등에 올릴 때는 이 허브 파일과 세 개의 시뮬레이터 HTML 파일을 같은 폴더에 두면 됩니다.
+  </div>
+
+  <div class="footer">LLM Simulation Hub · 고등학교 인공지능 기초 수업용</div>
+</div>
+
+<script>
+const sims = {
+  next: {title:"1. 다음 토큰 예측 시뮬레이터", src:"llm_next_token_simulator_v2.html"},
+  attn: {title:"2. Attention 시뮬레이터", src:"LLM_Attention_시뮬레이터.html"},
+  hall: {title:"3. 환각과 사실 검증 시뮬레이터", src:"LLM_환각_사실검증_시뮬레이터.html"}
+};
+
+function openSim(key){
+  document.getElementById("viewerTitle").textContent = sims[key].title;
+  document.getElementById("frame").src = sims[key].src;
+  document.getElementById("viewer").style.display = "block";
+  document.getElementById("viewer").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function closeViewer(){
+  document.getElementById("viewer").style.display = "none";
+}
+</script>
+</body>
+</html>

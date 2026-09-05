@@ -1,0 +1,51 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Attention 시뮬레이션</title><style>
+body{font-family:Arial,'Noto Sans KR',sans-serif;background:#f5f7fb;color:#182033;margin:0;line-height:1.55}
+.wrap{max-width:1000px;margin:auto;padding:24px}.card{background:white;border:1px solid #dfe5ee;border-radius:16px;padding:20px;margin-bottom:16px}
+.hero{background:#eef2ff}h1{margin:5px 0}h2{font-size:20px}.grid{display:grid;grid-template-columns:300px 1fr;gap:16px}
+label{font-weight:bold;display:block;margin-top:12px}select,input{width:100%;padding:8px;margin-top:4px}
+button{padding:10px 14px;margin-top:14px;border:0;border-radius:9px;background:#3457d5;color:white;font-weight:bold;cursor:pointer}
+.alt{background:#e8ecf4;color:#26324a}.token{display:inline-block;padding:8px;margin:4px;border-radius:8px;border:1px solid #dfe5ee}
+.row{display:grid;grid-template-columns:120px 1fr 55px;gap:10px;align-items:center;margin:8px 0}
+.track{height:14px;background:#edf0f5;border-radius:20px;overflow:hidden}.fill{height:100%;background:#3457d5}.result{padding:12px;border:1px solid #dfe5ee;border-radius:10px;margin-top:10px}
+.good{background:#eef8f2}.lack{background:#fff8e8}.bad{background:#fff0f0}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
+.note{color:#687086;font-size:14px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div class="card hero"><b>인공지능 기초 · Attention</b><h1>LLM은 문장에서 어디를 보고 있을까?</h1>
+<p>문맥 토큰마다 서로 다른 중요도를 줄 수 있다는 원리를 단순화해 관찰합니다.</p></div>
+<div class="grid"><div class="card"><h2>조작하기</h2>
+<label>입력 문장</label><select id="sent">
+<option value="0">철수는 사과를 먹었다. 그것은 달콤했다.</option>
+<option value="1">민지는 도서관에서 책을 빌렸다. 그 책은 재미있었다.</option>
+<option value="2">강아지가 공을 쫓아갔다. 그것은 잔디밭에 떨어졌다.</option>
+<option value="3">인공지능은 데이터를 학습한다. 이 과정에서 규칙을 찾는다.</option></select>
+<label>분석할 토큰</label><select id="target"></select>
+<label>Attention 집중도: <span id="fv">1.0</span></label><input id="focus" type="range" min=".1" max="2" step=".1" value="1">
+<button onclick="render()">적용</button><button class="alt" onclick="resetSim()">초기화</button>
+<p class="note">집중도가 높을수록 관계가 강한 일부 토큰의 중요도가 더 두드러지도록 단순화한 수업용 모델입니다.</p></div>
+<div class="card"><h2>토큰 중요도</h2><div id="tokens"></div><div id="bars"></div><div class="result" id="obs"></div></div></div>
+<div class="card"><h2>다음 토큰 후보 확률</h2><div id="next"></div>
+<p class="note">가중된 문맥이 달라지면 다음 토큰 후보의 확률도 달라질 수 있다는 관계를 보여줍니다.</p></div>
+<div class="card"><h2>생각해 보기</h2>
+<p>① 분석할 토큰을 바꾸면 중요하게 표시되는 문맥 토큰도 달라지는가?</p>
+<p>② Attention 집중도를 높이면 중요도 분포는 어떻게 달라지는가?</p>
+<p>③ Attention 값이 높다는 사실만으로 그 토큰이 출력의 원인이라고 단정할 수 있을까?</p></div></div>
+<script>
+const sets=[
+{t:["철수는","사과를","먹었다","그것은","달콤했다"],b:[[.15,.35,.2,.15,.15],[.12,.38,.22,.13,.15],[.18,.25,.32,.12,.13],[.10,.43,.12,.25,.10],[.08,.34,.12,.20,.26]],n:[["맛이",.42],["매우",.25],["그래서",.18],["하지만",.15]]},
+{t:["민지는","도서관에서","책을","빌렸다","그","책은","재미있었다"],b:[[.22,.15,.18,.18,.08,.10,.09],[.12,.34,.18,.14,.07,.08,.07],[.16,.18,.35,.14,.05,.07,.05],[.16,.18,.27,.25,.05,.05,.04],[.08,.08,.18,.08,.28,.25,.05],[.08,.10,.36,.08,.18,.16,.04],[.08,.10,.30,.10,.08,.18,.16]],n:[["그래서",.36],["민지는",.28],["다음",.20],["조용히",.16]]},
+{t:["강아지가","공을","쫓아갔다","그것은","잔디밭에","떨어졌다"],b:[[.32,.22,.18,.10,.10,.08],[.20,.38,.18,.08,.10,.06],[.24,.28,.30,.06,.07,.05],[.10,.42,.10,.25,.08,.05],[.10,.18,.12,.10,.38,.12],[.08,.25,.12,.08,.20,.27]],n:[["강아지는",.38],["공은",.29],["그리고",.19],["갑자기",.14]]},
+{t:["인공지능은","데이터를","학습한다","이","과정에서","규칙을","찾는다"],b:[[.30,.22,.18,.08,.08,.08,.06],[.18,.38,.20,.06,.07,.07,.04],[.20,.30,.32,.05,.05,.05,.03],[.10,.12,.14,.30,.18,.10,.06],[.10,.16,.20,.14,.26,.09,.05],[.12,.24,.18,.06,.08,.26,.06],[.12,.20,.20,.05,.08,.20,.15]],n:[["이를",.34],["그리고",.27],["학습된",.22],["하지만",.17]]}
+];
+const $=x=>document.getElementById(x);
+function dist(v,f){let a=v.map(x=>Math.pow(x,f)),z=a.reduce((x,y)=>x+y,0);return a.map(x=>x/z)}
+function populate(){let s=sets[+$("sent").value];$("target").innerHTML=s.t.map((x,i)=>'<option value="'+i+'">'+x+'</option>').join("");render()}
+function render(){let s=sets[+$("sent").value],i=+$("target").value,f=+$("focus").value;$("fv").textContent=f.toFixed(1);
+let d=dist(s.b[i],f),m=Math.max(...d),bi=d.indexOf(m);
+$("tokens").innerHTML=s.t.map((x,j)=>'<span class="token" style="background:rgba(52,87,213,'+(.08+.65*d[j]/m)+')">'+x+'</span>').join("");
+$("bars").innerHTML=s.t.map((x,j)=>'<div class="row"><div>'+x+'</div><div class="track"><div class="fill" style="width:'+(d[j]*100)+'%"></div></div><div>'+(d[j]*100).toFixed(1)+'%</div></div>').join("");
+$("obs").innerHTML="<b>관찰:</b> '"+s.t[i]+"'을 기준으로 '"+s.t[bi]+"'의 중요도가 가장 크게 표시됩니다.";
+let nd=dist(s.n.map(x=>x[1]),.6+.6*f);$("next").innerHTML=s.n.map((x,j)=>'<div class="row"><div>'+x[0]+'</div><div class="track"><div class="fill" style="width:'+(nd[j]*100)+'%"></div></div><div>'+(nd[j]*100).toFixed(1)+'%</div></div>').join("")}
+function resetSim(){$("focus").value=1;$("target").value=0;render()}
+$("sent").onchange=populate;$("target").onchange=render;$("focus").oninput=render;populate();
+</script></body></html>

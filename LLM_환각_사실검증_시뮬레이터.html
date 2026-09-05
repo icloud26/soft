@@ -1,0 +1,41 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM 환각과 사실 검증 시뮬레이션</title><style>
+body{font-family:Arial,'Noto Sans KR',sans-serif;background:#f5f7fb;color:#182033;margin:0;line-height:1.55}
+.wrap{max-width:1000px;margin:auto;padding:24px}.card{background:white;border:1px solid #dfe5ee;border-radius:16px;padding:20px;margin-bottom:16px}
+.hero{background:#eef2ff}h1{margin:5px 0}h2{font-size:20px}.grid{display:grid;grid-template-columns:300px 1fr;gap:16px}
+label{font-weight:bold;display:block;margin-top:12px}select,input{width:100%;padding:8px;margin-top:4px}
+button{padding:10px 14px;margin-top:14px;border:0;border-radius:9px;background:#3457d5;color:white;font-weight:bold;cursor:pointer}
+.alt{background:#e8ecf4;color:#26324a}.token{display:inline-block;padding:8px;margin:4px;border-radius:8px;border:1px solid #dfe5ee}
+.row{display:grid;grid-template-columns:120px 1fr 55px;gap:10px;align-items:center;margin:8px 0}
+.track{height:14px;background:#edf0f5;border-radius:20px;overflow:hidden}.fill{height:100%;background:#3457d5}.result{padding:12px;border:1px solid #dfe5ee;border-radius:10px;margin-top:10px}
+.good{background:#eef8f2}.lack{background:#fff8e8}.bad{background:#fff0f0}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}
+.note{color:#687086;font-size:14px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div class="card hero"><b>인공지능 기초 · 환각과 사실 검증</b><h1>자연스러운 문장은 항상 사실일까?</h1>
+<p>제공 문맥의 정보량과 답변 정책을 바꾸면서 답변 결과가 어떻게 달라지는지 관찰합니다.</p></div>
+<div class="grid"><div class="card"><h2>조작하기</h2>
+<label>질문</label><select id="q"><option value="0">한글을 창제한 왕은 누구인가?</option><option value="1">지구의 자연 위성은 무엇인가?</option><option value="2">물의 화학식은 무엇인가?</option><option value="3">대한민국의 수도는 어디인가?</option></select>
+<label>제공 문맥의 정보량</label><select id="ctx"><option value="none">없음</option><option value="partial">일부</option><option value="full">충분함</option></select>
+<label>답변 정책</label><select id="policy"><option value="always">항상 답하기</option><option value="hold">근거 없으면 보류</option></select>
+<button onclick="one()">답변 1회</button><button class="alt" onclick="ten()">같은 조건 10회</button>
+<p class="note">실제 LLM의 환각 발생률이 아니라 미리 설정한 확률 규칙을 사용하는 수업용 모델입니다.</p></div>
+<div class="card"><h2>제공된 근거</h2><div class="result" id="ev"></div><h2>생성 결과</h2><div class="result" id="ans">답변을 생성하세요.</div><div class="result" id="judge"><b>판정:</b> -</div></div></div>
+<div class="card" id="tc" style="display:none"><h2>같은 조건 10회 결과</h2><table><thead><tr><th>회차</th><th>생성 답변</th><th>판정</th></tr></thead><tbody id="rows"></tbody></table><div class="result" id="sum"></div></div>
+<div class="card"><h2>생각해 보기</h2><p>① 문맥이 없음 → 일부 → 충분함으로 바뀌면 결과는 어떻게 달라지는가?</p><p>② 근거가 부족한데도 항상 답하면 어떤 문제가 생길 수 있는가?</p><p>③ ‘근거 없으면 보류’ 정책의 장점과 한계는 무엇일까?</p></div></div>
+<script>
+const D=[
+{truth:"세종대왕",full:"세종대왕은 훈민정음을 창제하여 1446년에 반포하였다.",partial:"훈민정음은 조선 시대에 만들어졌다.",wrong:["정조","태종","광해군"]},
+{truth:"달",full:"달은 지구 주위를 공전하는 지구의 자연 위성이다.",partial:"지구에는 자연 위성이 있다.",wrong:["화성","금성","태양"]},
+{truth:"H₂O",full:"물은 수소 원자 2개와 산소 원자 1개로 이루어져 있으며 화학식은 H₂O이다.",partial:"물은 수소와 산소로 이루어진 물질이다.",wrong:["CO₂","O₂","NaCl"]},
+{truth:"서울",full:"대한민국의 수도는 서울특별시이다.",partial:"대한민국에는 특별시가 있다.",wrong:["부산","인천","대전"]}];
+const $=x=>document.getElementById(x);
+function evidence(){let d=D[+$("q").value],c=$("ctx").value;$("ev").textContent=c==="full"?d.full:c==="partial"?d.partial:"제공된 근거가 없습니다."}
+function gen(){let d=D[+$("q").value],c=$("ctx").value,p=$("policy").value,r=Math.random(),pr=c==="full"?[.86,.09,.05]:c==="partial"?[.52,.28,.20]:[.34,.38,.28],type=r<pr[0]?"good":r<pr[0]+pr[1]?"lack":"bad";
+if(p==="hold"&&c!=="full"&&type!=="good")return{text:"제공된 근거만으로는 확실하게 답하기 어렵습니다.",type:"lack",label:"근거 부족·보류"};
+if(type==="good")return{text:"답: "+d.truth+"입니다.",type:"good",label:"근거 있음"};
+if(type==="lack")return{text:"답: "+d.truth+"일 가능성이 있습니다. 다만 제공된 근거만으로 확인하기 어렵습니다.",type:"lack",label:"근거 부족"};
+let w=d.wrong[Math.floor(Math.random()*d.wrong.length)];return{text:"답: "+w+"입니다.",type:"bad",label:"근거와 충돌"}}
+function one(){evidence();let r=gen();$("ans").className="result "+r.type;$("ans").textContent=r.text;$("judge").className="result "+r.type;$("judge").innerHTML="<b>판정:</b> "+r.label}
+function ten(){evidence();let rs=Array.from({length:10},gen),cnt={};rs.forEach(r=>cnt[r.label]=(cnt[r.label]||0)+1);$("rows").innerHTML=rs.map((r,i)=>"<tr><td>"+(i+1)+"회</td><td>"+r.text+"</td><td>"+r.label+"</td></tr>").join("");$("sum").innerHTML="<b>10회 요약:</b> "+Object.entries(cnt).map(x=>x[0]+" "+x[1]+"회").join(" · ");$("tc").style.display="block";$("tc").scrollIntoView({behavior:"smooth"})}
+$("q").onchange=evidence;$("ctx").onchange=evidence;evidence();
+</script></body></html>
